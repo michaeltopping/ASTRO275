@@ -24,24 +24,28 @@ int main()
 	float RAarr[24];
 	float decArr[24];
 
+	//open the file for reading
 	FILE *inputFile;
-	
 	inputFile = fopen("Hub_1929.dat", "r");
 	
-	float r, v, m, M;
-	char ID[5];
+	float r, v, m, M; //data parameters
+	char ID[5]; 
 	float RAh, RAm, RAs;
 	float dech, decm, decs;
-	char h, min, s;
-	char pm;
-	char dec[11];
+	char h, min, s; //dummy characters
+	char pm; //+ or -
+	
+	//this will be the matrices that hold the data
+	//they form the equation y = B a
+	//where y is the velocities, a is H and the 3 velocity componenents
+	//and be is the data
 	float B[24][4];
 	float y[24];
 	float a[4];
 	
+	//read in the data and store it as our variables
 	for (int ii=0; ii<N; ii++) {
 		fscanf(inputFile, "%f %f %f %f %s %f %c %f %c %f %c %c %f %c %f %c %f %c", &r, &v, &m, &M, ID, &RAh, &h, &RAm, &min, &RAs, &s, &pm, &dech, &h, &decm, &min, &decs, &s);
-		//printf("%f %f %f %f %s %f %c %f %c %f %c %c %f %c %f %c %f %c", r, v, m, M, ID, RAh, h, RAm, min, RAs, s, pm, dech, h, decm, min, decs, s);
 		radii[ii] = r;
 		vels[ii] = v;
 		RAarr[ii] = RAtoRad(RAh, RAm, RAs);
@@ -53,21 +57,21 @@ int main()
 		y[ii] = v;
 
 	}
-	fclose(inputFile);
+	fclose(inputFile);  //close the file
 
-
-	for (int row = 0; row < 24; row++) {
-		for (int column = 0; column < 4; column++) {
-			printf("%5.2f  ", B[row][column]);
-		}
-		printf("\n");
-	}
+	//print B matrix
+// 	for (int row = 0; row < 24; row++) {
+// 		for (int column = 0; column < 4; column++) {
+// 			printf("%5.2f  ", B[row][column]);
+// 		}
+// 		printf("\n");
+// 	}
 	
 	
 	
 	//find transpose of B:
 	printf("Calculating transpose of B\n");
-	float Bt[4][24];
+	float Bt[4][24];  //B transpose
 	for (int row = 0; row < 24; row++) {
 		for (int column = 0; column < 4; column++) {
 			Bt[column][row] = B[row][column];
@@ -75,20 +79,9 @@ int main()
 	}
 	
 	
-	printf("Bt:\n");
-
-	
-	for (int row = 0; row < 4; row++) {
-		for (int column = 0; column < 24; column++) {
-			printf("%5.2f  ", Bt[row][column]);
-		}
-		printf("\n");
-	}
-	
-	
 	//multiply Bt and B:
 	printf("Multiplying B_transpose by B\n");
-	float BtB[4][4];
+	float BtB[4][4]; //B transpose * B
 	for (int column=0; column < 4; column++) {
 		for (int row=0; row < 4; row++) {
 			for (int obj=0; obj < 24; obj++) {
@@ -99,74 +92,49 @@ int main()
 	
 	
 	
-	printf("BtB:\n");
-	
-	for (int row = 0; row < 4; row++) {
-		for (int column = 0; column < 4; column++) {
-			printf("%f     ", BtB[column][row]);
-		}
-		printf("\n");
-	}
-	
-	
 	//now we find the inverse of BtB
 	//we first need the matrix of minors:
 	float MoM[4][4];
-	float RR[3][3];
-	int l, k;
+	float RR[3][3]; //matrix after removing one row and one column
 	
 	//loop through each element in the matrix of minors:
 	printf("Calculating the matrix of minors\n");
 	for (int row = 0; row < 4; row++) { //for each row in BtB
 		for (int column = 0; column < 4; column++) { //for each column in BtB
 
-			printf("Eliminating row: %d and column: %d\n", row, column);
+			//these variables will check if the next row/column has been removed
+			//leaving a 3x3 matrix
 			int nextBtBrow = 0;
 			int nextBtBcolumn = 0;
+			
+			//loop through the rows of the new reduced matrix
 			for (int rowRR = 0; rowRR < 3; rowRR++) {
 				nextBtBcolumn = 0;
 				if (nextBtBrow == row) {
 					nextBtBrow++;
 				}
+				//loop through the columns of the reduced matrix
 				for (int columnRR = 0; columnRR < 3; columnRR++) {
 					if (nextBtBcolumn == column) {
 						nextBtBcolumn++;
 					} 
-					//printf("Accessing row: %d, column: %d\n", nextBtBrow, nextBtBcolumn);
+					//assign the values of the new reduced matrix
 					RR[rowRR][columnRR] = BtB[nextBtBrow][nextBtBcolumn];
 					nextBtBcolumn++;
 				}
 				nextBtBrow++;
 			}
 		
-				
-			printf("Reduced Matrix:\n");
-	
-			for (int row = 0; row < 3; row++) {
-				for (int column = 0; column < 3; column++) {
-					printf("%f     ", RR[row][column]);
-				}
-				printf("\n");
-			}
-			
-			printf("\n");
+			//calculate the values for the matrix of minors as the determinant of
+			//the reduced matrix
 			MoM[row][column] = det3d(RR);
 			
 		}
 	}
 
 	
-	printf("MoM:\n");
-	
-	for (int row = 0; row < 4; row++) {
-		for (int column = 0; column < 4; column++) {
-			printf("%f     ", MoM[column][row]);
-		}
-		printf("\n");
-	}
-	
-	
 	//get the matrix of cofactors
+	//for odd (row# + column#) the values are multiplied by -1
 	for (int row = 0; row < 4; row++) {
 		for (int column = 0; column < 4; column++) {
 			MoM[row][column] = pow(-1, (row+column))*MoM[row][column];
@@ -175,20 +143,25 @@ int main()
 	
 	
 	//transpose the matrix of minors
-	float MoMt[4][24];
+	float MoMt[4][24];  //find the transpose of the cofactored matrix of minors
 	for (int ii = 0; ii < 24; ii++) {
 		for (int jj = 0; jj < 4; jj++) {
 			MoMt[jj][ii] = MoM[ii][jj];
 		}
 	}
 	
+	
 	//find the determinant of the original matrix BtB
 	float BtBdet;
 	printf("Calculating the determinant of BtB\n");
+	//loop through columns of the B transpose * B matrix
 	for (int column = 0; column < 4; column++) {
 
+		//for determining which row/column will be removed
 		int nextBtBrow = 0;
 		int nextBtBcolumn = 0;
+		
+		//loop through the rows of the reduced matrix
 		for (int rowRR = 0; rowRR < 3; rowRR++) {
 			nextBtBcolumn = 0;
 			if (nextBtBrow == 0) {
@@ -198,7 +171,6 @@ int main()
 				if (nextBtBcolumn == column) {
 					nextBtBcolumn++;
 				} 
-				//printf("Accessing row: %d, column: %d\n", nextBtBrow, nextBtBcolumn);
 				RR[rowRR][columnRR] = BtB[nextBtBrow][nextBtBcolumn];
 				nextBtBcolumn++;
 			}
@@ -206,23 +178,11 @@ int main()
 		}
 	
 			
-		printf("Reduced Matrix:\n");
-
-		for (int row = 0; row < 3; row++) {
-			for (int column = 0; column < 3; column++) {
-				printf("%f     ", RR[row][column]);
-			}
-			printf("\n");
-		}
-		
-		printf("\n");
-		
-		
+		//calculate the determinant of the BtB matrix
 		BtBdet += pow(-1,column)*BtB[0][column]*det3d(RR);
 	}
-	printf("%f\n", BtBdet);
 	
-	//then divide by the inverse:
+	//then divide transpose matrix of minors by the determinant:
 	float BtBinv[4][4];
 	for (int row = 0; row < 4; row++) {
 		for (int column = 0; column < 4; column++) {
@@ -231,19 +191,9 @@ int main()
 		}
 	}
 	
-	printf("BtBinv:\n");
 	
-	for (int row = 0; row < 4; row++) {
-		for (int column = 0; column < 4; column++) {
-			printf("%f     ", BtBinv[column][row]);
-		}
-		printf("\n");
-	}
-	
-	
-	
-	
-	//multiply B and B:
+
+	//multiply B transpose *B with B:
 	printf("Multiplying B_transposeB inverse by B\n");
 	float BtBinvBt[4][24];
 	for (int kk=0; kk < 4; kk++) {
@@ -255,20 +205,23 @@ int main()
 	}
 	
 	
-	//multiply by y
+	//multiply by y, the velocities of the galaxies to get a vector of the answers!
 	float tot;
+	char vars[5] = "HXYZ\0";
 	for (int param = 0; param < 4; param++) {
 		tot = 0;
 		for (int obj = 0; obj < 24; obj++) {
 			tot += BtBinvBt[param][obj]*y[obj];
 		}
-		printf("%f\n", tot);
+		printf("%c = %f\n", vars[param], tot);
 	}
 	
 	return 0;
 }
 
 
+//inputs a 3x3 matrix and returns the determinant
+//just hardcoded
 float det3d(float mat[3][3])
 {
 	float det;
@@ -277,7 +230,7 @@ float det3d(float mat[3][3])
 }
 
 
-
+//convert RA h, min, sec to radians
 double RAtoRad(float RAh, float RAm, float RAs)
 {
 	float RAdeci;
@@ -286,6 +239,7 @@ double RAtoRad(float RAh, float RAm, float RAs)
 
 }
 
+//convert declination deg, min, sec to radians
 double dectoRad(float dech, float decm, float decs, char pm)
 {
 	float decdeci;
@@ -297,53 +251,4 @@ double dectoRad(float dech, float decm, float decs, char pm)
 	
 	return (decdeci * M_PI / 180.0);
 }
-
-
-
-float regress(float *radii, float *vels, float *RAs, float *decs,float Hmin, float Xmin, float Ymin, float Zmin, float Hmax, float Xmax, float Ymax, float Zmax, float dH, float dX, float dY, float dZ, int N)
-{
-	float Rsqr = 0;
-	float minRes= DBL_MAX;
-	float Hlow = 0;
-	float Xlow = 0;
-	float Ylow = 0;
-	float Zlow = 0;
-	
-	//loop through all possible values
-	//H ~ 465
-	//X ~ -70
-	//Y ~ 240
-	//Z ~ -200
-	for(float H = Hmin; H < Hmax; H += dH) {
-		//printf("H is now: %f\n", H);
-		for(float X = Xmin; X < 60; X += dX) {
-			//printf("X is now: %f\n", X);
-
-			for(float Y = Ymin; Y < Ymax; Y += dY) {
-				//printf("Y is now: %f\n", Y);
-
-				for(float Z = Zmin; Z < -190; Z += dZ) {
-					Rsqr = 0;
-					for(int ii = 0; ii < N; ii++) {
-
-						Rsqr += pow((vels[ii] - H*radii[ii] - X*cos(RAs[ii])*cos(decs[ii]) - Y*sin(RAs[ii])*cos(decs[ii]) - Z*sin(decs[ii])),2);
-					
-					}
-					if(Rsqr < minRes) {
-						minRes = Rsqr;
-						Hlow = H;
-						Xlow = X;
-						Ylow = Y;
-						Zlow = Z;
-					}
-				}
-			}
-		}
-	}
-	printf("minRes: %f with H, X, Y, Z: %f %f %f %f\n",minRes, Hlow, Xlow, Ylow, Zlow);
-	regress(radii, vels, RAs, decs, Hlow-2*dH, Xlow-2*dX, Ylow-2*dY, Zlow-2*dZ, Hlow+2*dH, Xlow+2*dX, Ylow+2*dY, Zlow+2*dZ, dH/10., dX/10., dY/10., dZ/10., N);
-
-	return 0.0;
-}
-
 
