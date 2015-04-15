@@ -7,7 +7,8 @@ float *multiply(float arr1[], float arr2[], int N);
 float f(float halfLifeI, float N, float P, float t);
 float findRoot(float t0, float maxErr, int maxIter, float halfLifeI, float N, float P, float dt);
 float df(float halfLifeI, float N, float P, float t, float dt);
-
+float dtdP(float N, float P, float t, float halflifeI);
+float tError(float N, float P, float t, float halflifeI);
 
 
 int main()
@@ -31,24 +32,24 @@ int main()
 	float dt = 0.01;
 		
 	//Thorium 232
-	float halfLifeI = 14.05;
-	float N = 2.2222;
-	float P = 1.6;
+	float halfLifeTh = 14.05;
+	float NTh = 2.2222;
+	float PTh = 1.6;
 		
-	float ThAge =findRoot(t0, maxErr, maxIter, halfLifeI, N, P, dt);
+	float ThAge =findRoot(t0, maxErr, maxIter, halfLifeTh, NTh, PTh, dt);
 
 
 
 	//Uranium 235
-	N = .3246;
-	P = 1.16;
-	halfLifeI = 0.7038;
+	float NU = .3246;
+	float PU = 1.16;
+	float halfLifeU235 = 0.7038;
 		
-	float UAge =findRoot(t0, maxErr, maxIter, halfLifeI, N, P, dt);
+	float UAge =findRoot(t0, maxErr, maxIter, halfLifeU235, NU, PU, dt);
 
 
-	printf("Age of the universe (232Th): %f\n", ThAge + ssAge);
-	printf("Age of the universe (235U): %f\n", UAge + ssAge);
+	printf("Age of the universe (232Th): %f +/- %f\n", ThAge + ssAge, tError(NTh, PTh, ThAge, halfLifeTh));
+	printf("Age of the universe (235U): %f +/- %f\n", UAge + ssAge, tError(NU, PU, UAge, halfLifeU235));
 
 	return 0;
 }
@@ -107,4 +108,21 @@ float *multiply(float arr1[], float arr2[], int N)
 	}
 	
 	return newArr;
+}
+
+//find the error in the time
+float tError(float N, float P, float t, float halflifeI)
+{
+	float dP = P * 0.1;
+	float dt = dtdP(N, P, t, halflifeI) * dP;
+	return dt;
+}
+
+//derivative of time with respect to Production P
+float dtdP(float N, float P, float t, float halflifeI)
+{
+	float halflifeU = 4.47;
+	float lambdaI = log(2)/halflifeI;
+	float lambdaU = log(2)/halflifeU;
+	return -(N / pow(P,2))*(lambdaI/lambdaU)*(pow((exp(lambdaU*t)-1),2)/( exp((lambdaU-lambdaI)*t)*(lambdaI*(exp(lambdaU*t)-1) - lambdaU*exp(lambdaI*t) + lambdaU) ));
 }
